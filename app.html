@@ -466,7 +466,7 @@
                     </div>
                 </div>
 
-                <!-- Aviso de Sincronización con la App del Profesor -->
+                    <!-- Aviso de Sincronización con la App del Profesor -->
                 <div class="cyber-card rounded-2xl p-4 border border-neon/25">
                     <div class="flex items-center gap-2 text-neon font-bold text-xs mb-1">
                         <i class="ph-fill ph-check-seal text-base"></i>
@@ -486,15 +486,15 @@
                     <div class="bg-black/40 p-3.5 rounded-xl border border-white/5 space-y-2 text-xs">
                         <div class="flex justify-between">
                             <span class="text-gray-400">Plan Contratado:</span>
-                            <span class="font-bold text-white">Entrenamiento Personalizado + App</span>
+                            <span id="subPlanName" class="font-bold text-white">Entrenamiento Personalizado + App</span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-gray-400">Medio de Pago Registrado:</span>
-                            <span class="font-mono text-gray-300">Tarjeta Demo •••• 0000</span>
+                            <span id="subPaymentMethod" class="font-mono text-gray-300">Tarjeta Demo •••• 0000</span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-gray-400">Próximo Vencimiento:</span>
-                            <span class="font-mono text-neon">Día 10 del próximo mes</span>
+                            <span id="subPaymentDue" class="font-mono text-neon">Día 10 del próximo mes</span>
                         </div>
                     </div>
                 </div>
@@ -828,6 +828,86 @@
             switchAppTab('inicio');
             showAppToast('¡Sesión guardada y sincronizada con tu entrenador!');
         };
+
+        // Función para refrescar toda la interfaz del alumno cuando el entrenador hace cambios en coach.html
+        window.applyCoachSyncData = function(data) {
+            if (!data) return;
+            STUDENT_PROFILE.name = data.name || STUDENT_PROFILE.name;
+            STUDENT_PROFILE.initials = data.initials || STUDENT_PROFILE.initials;
+            STUDENT_PROFILE.level = data.level || STUDENT_PROFILE.level;
+            STUDENT_PROFILE.plan = data.plan || STUDENT_PROFILE.plan;
+            STUDENT_PROFILE.goal = data.goal || STUDENT_PROFILE.goal;
+            STUDENT_PROFILE.coachDirective = data.coachDirective || STUDENT_PROFILE.coachDirective;
+            STUDENT_PROFILE.waterTarget = data.waterTarget || STUDENT_PROFILE.waterTarget;
+
+            // Cabecera y Directiva
+            document.getElementById('headerAvatar').textContent = STUDENT_PROFILE.initials;
+            document.getElementById('headerStudentName').textContent = STUDENT_PROFILE.name;
+            document.getElementById('headerStudentLevel').textContent = STUDENT_PROFILE.level;
+            document.getElementById('headerPlanName').textContent = STUDENT_PROFILE.plan;
+            document.getElementById('coachDirectiveText').textContent = `"${STUDENT_PROFILE.coachDirective}"`;
+
+            // Batería Corporal y Progreso Mensual
+            if (data.recoveryPct) document.getElementById('hudRecoveryValue').textContent = data.recoveryPct;
+            if (data.sessionsDone !== undefined && data.sessionsTarget !== undefined) {
+                document.getElementById('monthlyProgressLabel').textContent = `${data.sessionsDone} / ${data.sessionsTarget} Sesiones`;
+            }
+            document.getElementById('waterStatusText').innerHTML = `Agua: <strong class="text-white">${STUDENT_PROFILE.waterLiters} / ${STUDENT_PROFILE.waterTarget} L</strong>`;
+
+            // Credencial Digital y Pagos
+            document.getElementById('cardStudentName').textContent = STUDENT_PROFILE.name.toUpperCase();
+            document.getElementById('cardStudentGoal').textContent = STUDENT_PROFILE.goal;
+            if (data.paymentStatus) document.getElementById('paymentBadge').textContent = data.paymentStatus;
+            if (data.plan) document.getElementById('subPlanName').textContent = data.plan;
+            if (data.paymentMethod) document.getElementById('subPaymentMethod').textContent = data.paymentMethod;
+            if (data.paymentDueDate) document.getElementById('subPaymentDue').textContent = data.paymentDueDate;
+
+            // BioScan y Rutinas
+            if (data.scansJson) {
+                STUDENT_PROFILE.scans = JSON.parse(data.scansJson);
+                toggleBioScanMode('current');
+            }
+            if (data.routinesJson) {
+                const updatedRoutines = JSON.parse(data.routinesJson);
+                Object.assign(ROUTINES_DB, updatedRoutines);
+            }
+        };
+    </script>
+
+    <!-- Sincronización en Tiempo Real con el Panel del Entrenador (coach.html) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'demo-pt-app';
+        const fallbackConfig = { apiKey: "demo", authDomain: "demo.firebaseapp.com", projectId: "demo" };
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : fallbackConfig;
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        async function initStudentLiveSync() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                if (!auth.currentUser) return;
+
+                const demoStudentDoc = doc(db, 'artifacts', appId, 'public', 'data', 'students', 'TF-000100');
+                onSnapshot(demoStudentDoc, (snap) => {
+                    if (snap.exists() && window.applyCoachSyncData) {
+                        window.applyCoachSyncData(snap.data());
+                    }
+                }, (err) => console.error("Error sync alumno:", err));
+            } catch (e) {
+                console.error(e);
+            }
+        }
+        initStudentLiveSync();
     </script>
 </body>
 </html>
