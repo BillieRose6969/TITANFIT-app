@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TITANFIT OS | App Cliente</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        neon: '#a3e635',
+                        neonHover: '#84cc16',
+                        darkBg: '#09090b',
+                        cardBg: '#141417',
+                    },
+                    fontFamily: { sans: ['Inter', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        body { background-color: #09090b; color: #fff; font-family: 'Inter', sans-serif; overflow: hidden; }
+        .neon-text { color: #a3e635; text-shadow: 0 0 18px rgba(163, 230, 53, 0.35); }
+        .neon-button {
+            background-color: #a3e635; color: #09090b;
+            box-shadow: 0 0 20px rgba(163, 230, 53, 0.35);
+            transition: all 0.2s ease;
+        }
+        .neon-button:hover { background-color: #bef264; box-shadow: 0 0 30px rgba(163, 230, 53, 0.55); }
+        .titan-grid-bg {
+            background-size: 24px 24px;
+            background-image: linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px);
+        }
+        .cyber-card {
+            background: linear-gradient(145deg, rgba(28, 28, 34, 0.9) 0%, rgba(16, 16, 20, 0.95) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .cyber-card-neon {
+            background: linear-gradient(135deg, rgba(163, 230, 53, 0.14) 0%, rgba(20, 20, 24, 0.95) 65%);
+            border: 1px solid rgba(163, 230, 53, 0.35);
+        }
+        .titan-black-card {
+            background: radial-gradient(circle at 100% 0%, rgba(163, 230, 53, 0.28) 0%, rgba(24, 24, 27, 0.95) 50%, #09090b 100%);
+            border: 1px solid rgba(163, 230, 53, 0.4);
+        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="h-full flex flex-col justify-between select-none">
+
+    <!-- HUD Header Fijo (100% Independiente como App Nativa) -->
+    <header class="bg-zinc-950/95 backdrop-blur-md border-b border-white/10 px-4 py-3 flex items-center justify-between w-full z-30">
+        <div class="flex items-center gap-2.5">
+            <div id="headerAvatar" class="w-9 h-9 rounded-xl bg-neon text-black font-black flex items-center justify-center text-xs shadow">AD</div>
+            <div>
+                <div class="flex items-center gap-1.5">
+                    <span id="headerStudentName" class="font-black text-xs uppercase text-white">Alumno Demo</span>
+                    <span id="headerStudentLevel" class="px-1.5 py-0.5 bg-neon/15 border border-neon/40 text-neon text-[9px] font-extrabold rounded">NV. 01</span>
+                </div>
+                <span class="text-[10px] text-gray-400 block"><span id="headerPlanName">Plan Personalizado</span> • <span id="headerStatusBadge" class="text-emerald-400 font-semibold">Activo</span></span>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <!-- Indicador de Sincronización con el Entrenador -->
+            <div class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-[10px] text-gray-300">
+                <span class="w-1.5 h-1.5 rounded-full bg-neon animate-pulse"></span>
+                <span>Sync Coach</span>
+            </div>
+            <button onclick="openQrModal()" class="px-3 py-1.5 rounded-xl bg-neon/15 hover:bg-neon/25 border border-neon/40 flex items-center gap-1.5 text-neon transition-colors" title="Pase QR de Acceso">
+                <i class="ph-bold ph-qr-code text-base"></i>
+                <span class="text-[10px] font-black uppercase tracking-wider">Pase QR</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Contenedor Principal de la App -->
+    <main id="appScrollContainer" class="flex-1 overflow-y-auto no-scrollbar w-full bg-darkBg titan-grid-bg relative pb-28">
+        <div class="max-w-lg mx-auto w-full">
+
+            <!-- PESTAÑA 1: INICIO (HUD TÁCTICO COMPLETO) -->
+            <section id="appTab-inicio" class="p-4 space-y-4">
+                
+                <!-- Directiva del Entrenador (Editable luego desde la App del Profesor) -->
+                <div class="cyber-card rounded-2xl p-3.5 border-l-4 border-l-neon flex items-start gap-3">
+                    <div class="w-8 h-8 rounded-xl bg-neon/15 border border-neon/30 flex items-center justify-center text-neon shrink-0 mt-0.5">
+                        <i class="ph-fill ph-megaphone text-base"></i>
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] font-black uppercase tracking-wider text-neon">Directiva del Coach</span>
+                            <span class="text-[9px] text-gray-500 font-mono">Actualizado hoy</span>
+                        </div>
+                        <p id="coachDirectiveText" class="text-xs text-gray-200 mt-1 leading-relaxed">
+                            "Priorizar técnica y control excéntrico de 3 segundos en Prensa y Sentadilla Hack. Mantener hidratación alta."
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Bento Grid: Recuperación SNC + Stack de Suplementación/Agua -->
+                <div class="grid grid-cols-12 gap-3">
+                    <div class="col-span-7 cyber-card rounded-2xl p-4 flex flex-col justify-between relative overflow-hidden">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Batería Corporal</span>
+                            <i class="ph-fill ph-lightning text-neon text-sm"></i>
+                        </div>
+                        <div class="my-2 flex items-baseline gap-1">
+                            <span id="hudRecoveryValue" class="text-4xl font-black text-white">92</span>
+                            <span class="text-lg font-black text-neon">%</span>
+                        </div>
+                        <div class="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden mb-1.5">
+                            <div class="bg-neon h-full w-[92%] rounded-full"></div>
+                        </div>
+                        <p class="text-[10px] text-emerald-400 font-semibold">SNC Óptimo para Sobrecarga</p>
+                    </div>
+
+                    <div class="col-span-5 cyber-card rounded-2xl p-3.5 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-[10px] font-bold text-cyan-400 uppercase">Stack Diario</span>
+                                <i class="ph-fill ph-drop text-cyan-400 text-sm"></i>
+                            </div>
+                            <p id="creatineStatusText" class="text-xs font-extrabold text-white mt-1.5">Creatina 5g: Pendiente</p>
+                            <p id="waterStatusText" class="text-[10px] text-gray-400 mt-0.5">Agua: <strong class="text-white">2.0 / 3.0 L</strong></p>
+                        </div>
+                        <div class="grid grid-cols-2 gap-1.5 mt-2.5">
+                            <button id="creatineCheckBtn" onclick="logCreatineDose()" class="py-1.5 px-2 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-400/30 text-cyan-300 font-bold text-[10px] transition-all">
+                                +5g Creat.
+                            </button>
+                            <button onclick="addWaterGlass()" class="py-1.5 px-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-200 font-bold text-[10px] transition-all">
+                                +250ml
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Misión de Hoy (Split Asignado) -->
+                <div class="cyber-card-neon rounded-3xl p-5 relative overflow-hidden">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="px-2.5 py-1 rounded-md bg-neon text-black font-black text-[10px] uppercase tracking-wider">SESIÓN ASIGNADA • SPLIT A</span>
+                        <span class="text-xs font-mono text-gray-300"><i class="ph-bold ph-clock mr-1 text-neon"></i>45 min</span>
+                    </div>
+                    <h2 class="text-xl font-black text-white uppercase tracking-tight">Lower Torque: Cuádriceps & Glúteo</h2>
+                    <p class="text-xs text-gray-300 mt-1">6 ejercicios pautados • Registro de peso y repeticiones serie por serie.</p>
+                    
+                    <div class="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs text-gray-300 mb-4">
+                        <span>Cumplimiento del Mes: <strong id="monthlyProgressLabel" class="text-neon">8 / 20 Sesiones</strong></span>
+                        <span class="font-mono text-[11px] text-neon">40%</span>
+                    </div>
+
+                    <button onclick="openRoutineDetail('A')" class="w-full py-3.5 rounded-xl neon-button font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2">
+                        <i class="ph-fill ph-play-circle text-lg"></i> Iniciar Registro en Sala
+                    </button>
+                </div>
+
+                <!-- Gráfico de Tonelaje y Constancia Semanal -->
+                <div class="cyber-card rounded-2xl p-4">
+                    <div class="flex justify-between items-center mb-3">
+                        <div>
+                            <span class="text-[10px] font-bold uppercase text-gray-400 block">Volumen Movido (Semana Actual)</span>
+                            <span id="weeklyVolumeTotal" class="text-lg font-black text-white font-mono">18,540 <span class="text-xs text-neon">kg</span></span>
+                        </div>
+                        <span class="px-2 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold">+12% vs sem. ant.</span>
+                    </div>
+                    <div class="grid grid-cols-7 gap-2 items-end h-24 pt-4 px-1">
+                        <div class="flex flex-col items-center gap-1.5 h-full justify-end">
+                            <div class="w-full bg-neon rounded-t-md h-[75%]"></div>
+                            <span class="text-[9px] font-bold text-gray-400">L</span>
+                        </div>
+                        <div class="flex flex-col items-center gap-1.5 h-full justify-end">
+                            <div class="w-full bg-neon rounded-t-md h-[90%]"></div>
+                            <span class="text-[9px] font-bold text-gray-400">M</span>
+                        </div>
+                        <div class="flex flex-col items-center gap-1.5 h-full justify-end">
+                            <div class="w-full bg-zinc-800 rounded-t-md h-[15%]"></div>
+                            <span class="text-[9px] font-bold text-gray-500">X</span>
+                        </div>
+                        <div class="flex flex-col items-center gap-1.5 h-full justify-end">
+                            <div class="w-full bg-neon rounded-t-md h-[100%]"></div>
+                            <span class="text-[9px] font-bold text-gray-400">J</span>
+                        </div>
+                        <div class="flex flex-col items-center gap-1.5 h-full justify-end">
+                            <div class="w-full bg-neon/40 border border-dashed border-neon rounded-t-md h-[65%]"></div>
+                            <span class="text-[9px] font-black text-neon">HOY</span>
+                        </div>
+                        <div class="flex flex-col items-center gap-1.5 h-full justify-end">
+                            <div class="w-full bg-zinc-800 rounded-t-md h-[15%]"></div>
+                            <span class="text-[9px] font-bold text-gray-500">S</span>
+                        </div>
+                        <div class="flex flex-col items-center gap-1.5 h-full justify-end">
+                            <div class="w-full bg-zinc-800 rounded-t-md h-[15%]"></div>
+                            <span class="text-[9px] font-bold text-gray-500">D</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PESTAÑA 2: RUTINAS & LOGGER DE SERIES INTERACTIVO -->
+            <section id="appTab-rutina" class="hidden p-4 space-y-4">
+                
+                <!-- Vista de Selección de Splits -->
+                <div id="routineListView" class="space-y-3">
+                    <div class="flex items-center justify-between mb-2">
+                        <div>
+                            <span class="text-[10px] font-bold uppercase tracking-widest text-neon">Planificación Activa</span>
+                            <h1 class="text-lg font-black uppercase text-white">Microciclo A / B / C / D</h1>
+                        </div>
+                        <span class="px-2.5 py-1 rounded-xl bg-white/5 border border-white/10 text-[10px] font-semibold text-gray-300">Fase Hipertrofia</span>
+                    </div>
+                    
+                    <div onclick="openRoutineDetail('A')" class="cyber-card rounded-2xl p-4 cursor-pointer hover:border-neon transition-all group">
+                        <div class="flex justify-between items-center mb-1.5">
+                            <span class="px-2 py-0.5 rounded bg-neon text-black font-black text-[10px]">SPLIT A • RECOMENDADO HOY</span>
+                            <i class="ph-bold ph-caret-right text-gray-400 group-hover:text-neon"></i>
+                        </div>
+                        <h3 class="font-black text-white text-base">Lower Torque (Cuádriceps & Glúteo)</h3>
+                        <p class="text-xs text-gray-400 mt-0.5">6 ejercicios • Prensa 45°, Hip Thrust, Sillón Cuádriceps, Búlgaras, Gemelos, Smith.</p>
+                    </div>
+
+                    <div onclick="openRoutineDetail('B')" class="cyber-card rounded-2xl p-4 cursor-pointer hover:border-neon transition-all group">
+                        <div class="flex justify-between items-center mb-1.5">
+                            <span class="px-2 py-0.5 rounded bg-white/10 text-white font-black text-[10px]">SPLIT B • TORSO EMPUJE/TIRÓN</span>
+                            <i class="ph-bold ph-caret-right text-gray-400 group-hover:text-neon"></i>
+                        </div>
+                        <h3 class="font-black text-white text-base">Upper Hypertrophy (Pecho, Hombro & Bíceps)</h3>
+                        <p class="text-xs text-gray-400 mt-0.5">6 ejercicios • Press Plano, Inclinado Mancuernas, Aperturas, Press Militar, Polea, Scott.</p>
+                    </div>
+
+                    <div onclick="openRoutineDetail('C')" class="cyber-card rounded-2xl p-4 cursor-pointer hover:border-neon transition-all group">
+                        <div class="flex justify-between items-center mb-1.5">
+                            <span class="px-2 py-0.5 rounded bg-white/10 text-white font-black text-[10px]">SPLIT C • CADENA POSTERIOR</span>
+                            <i class="ph-bold ph-caret-right text-gray-400 group-hover:text-neon"></i>
+                        </div>
+                        <h3 class="font-black text-white text-base">Posterior Chain (Isquios, Aductores & Hack)</h3>
+                        <p class="text-xs text-gray-400 mt-0.5">6 ejercicios • Sentadilla Hack, Peso Muerto Rumano, Camilla Isquios, Abductor, Aductor, Gemelos.</p>
+                    </div>
+
+                    <div onclick="openRoutineDetail('D')" class="cyber-card rounded-2xl p-4 cursor-pointer hover:border-neon transition-all group">
+                        <div class="flex justify-between items-center mb-1.5">
+                            <span class="px-2 py-0.5 rounded bg-white/10 text-white font-black text-[10px]">SPLIT D • ESPALDA & TRÍCEPS</span>
+                            <i class="ph-bold ph-caret-right text-gray-400 group-hover:text-neon"></i>
+                        </div>
+                        <h3 class="font-black text-white text-base">Back Density & Arm Lockout</h3>
+                        <p class="text-xs text-gray-400 mt-0.5">6 ejercicios • Jalón Frontal, Remo Máquina, Remo Bajo, Pull-Over Polea, Fondos, Francés.</p>
+                    </div>
+                </div>
+
+                <!-- Logger Detallado Serie por Serie -->
+                <div id="routineDetailView" class="hidden space-y-4 pb-12">
+                    <!-- Cabecera Pegajosa con Cronómetro General y Volumen en Vivo -->
+                    <div class="sticky top-2 bg-zinc-950/95 backdrop-blur-md p-3.5 rounded-2xl border border-white/15 flex justify-between items-center z-20 shadow-xl">
+                        <button onclick="closeRoutineDetail()" class="px-2.5 py-1.5 bg-white/5 hover:bg-white/10 rounded-xl text-xs font-bold flex items-center gap-1">
+                            <i class="ph-bold ph-arrow-left"></i> Splits
+                        </button>
+                        <div class="text-center">
+                            <span id="activeRoutineTitle" class="font-black text-[11px] text-neon uppercase block">SPLIT A</span>
+                            <span id="workoutElapsedTimer" class="font-mono text-xs text-white font-bold">00:00:00</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-[9px] text-gray-400 uppercase block">Tonelaje Hoy</span>
+                            <span id="liveSessionVolume" class="font-mono font-black text-xs text-neon">0 kg</span>
+                        </div>
+                    </div>
+
+                    <!-- Barra Flotante de Descanso Automático -->
+                    <div id="floatingRestBar" class="hidden cyber-card-neon rounded-2xl p-3 flex justify-between items-center shadow-lg">
+                        <div class="flex items-center gap-2">
+                            <i class="ph-fill ph-timer text-neon text-lg animate-spin"></i>
+                            <div>
+                                <span class="text-[10px] font-bold uppercase text-gray-300 block">Descanso entre series</span>
+                                <strong id="floatingRestCountdown" class="text-white font-mono text-sm">00:45</strong>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <button onclick="addRestSeconds(15)" class="px-2.5 py-1 bg-white/10 hover:bg-white/20 text-white text-[10px] font-bold rounded-lg">+15s</button>
+                            <button onclick="stopFloatingRest()" class="px-2.5 py-1 bg-neon text-black text-[10px] font-black rounded-lg">Saltar</button>
+                        </div>
+                    </div>
+
+                    <!-- Contenedor Dinámico de Ejercicios y Tablas de Series -->
+                    <div id="exercisesContainer" class="space-y-3.5"></div>
+
+                    <button onclick="finishCurrentWorkout()" class="w-full py-4 rounded-2xl neon-button font-black text-xs uppercase tracking-wider shadow-lg flex items-center justify-center gap-2">
+                        <i class="ph-bold ph-check-circle text-lg"></i> Finalizar y Sincronizar Entrenamiento
+                    </button>
+                </div>
+            </section>
+
+            <!-- PESTAÑA 3: SALUD / LABORATORIO BIOSCAN -->
+            <section id="appTab-salud" class="hidden p-4 space-y-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-neon">Bioimpedancia InBody</span>
+                        <h1 class="text-lg font-black uppercase text-white">Laboratorio TitanScan</h1>
+                    </div>
+                    <!-- Conmutador Comparativo: Actual vs Día 1 -->
+                    <div class="bg-zinc-900 p-1 rounded-xl border border-white/10 flex text-[10px] font-bold">
+                        <button id="scanBtnCurrent" onclick="toggleBioScanMode('current')" class="px-2.5 py-1 rounded-lg bg-neon text-black transition-all">Actual</button>
+                        <button id="scanBtnInitial" onclick="toggleBioScanMode('initial')" class="px-2.5 py-1 rounded-lg text-gray-400 hover:text-white transition-all">Día 1</button>
+                    </div>
+                </div>
+
+                <!-- Tarjeta Principal de Composición Corporal -->
+                <div class="cyber-card rounded-3xl p-5 space-y-4">
+                    <div class="flex justify-between items-center border-b border-white/10 pb-3.5">
+                        <div>
+                            <span id="scanDateLabel" class="text-[10px] text-gray-400 uppercase font-semibold">Medición Actual • Control Mensual</span>
+                            <h3 id="scanWeightValue" class="text-3xl font-black text-white mt-0.5">78.4 kg</h3>
+                        </div>
+                        <span id="scanDeltaBadge" class="px-2.5 py-1 rounded-xl bg-neon/15 border border-neon/40 text-neon font-black text-xs">+2.4 kg Músculo</span>
+                    </div>
+
+                    <div class="space-y-3.5 text-xs">
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-gray-300 font-medium">Masa Muscular Esquelética</span>
+                                <span id="scanMuscleValue" class="text-neon font-black font-mono">38.2 kg</span>
+                            </div>
+                            <div class="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
+                                <div id="scanMuscleBar" class="bg-neon h-full w-[84%] rounded-full transition-all duration-500"></div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-gray-300 font-medium">Porcentaje de Grasa Corporal</span>
+                                <span id="scanFatValue" class="text-amber-400 font-black font-mono">13.8 %</span>
+                            </div>
+                            <div class="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
+                                <div id="scanFatBar" class="bg-amber-400 h-full w-[32%] rounded-full transition-all duration-500"></div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-gray-300 font-medium">Agua Intracelular & Hidratación</span>
+                                <span id="scanWaterValue" class="text-cyan-400 font-black font-mono">62.5 %</span>
+                            </div>
+                            <div class="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
+                                <div id="scanWaterBar" class="bg-cyan-400 h-full w-[78%] rounded-full transition-all duration-500"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Parámetros Antropométricos Cargados por el Profesor -->
+                <div class="cyber-card rounded-2xl p-4">
+                    <h4 class="text-xs font-bold uppercase text-gray-400 mb-3">Perímetros Musculares (Cargados por el Coach)</h4>
+                    <div class="grid grid-cols-2 gap-2.5 text-xs">
+                        <div class="bg-black/40 p-3 rounded-xl border border-white/5 flex justify-between">
+                            <span class="text-gray-400">Brazo Contraído</span>
+                            <span class="font-mono font-bold text-white">40.5 cm</span>
+                        </div>
+                        <div class="bg-black/40 p-3 rounded-xl border border-white/5 flex justify-between">
+                            <span class="text-gray-400">Torso / Pecho</span>
+                            <span class="font-mono font-bold text-white">106.0 cm</span>
+                        </div>
+                        <div class="bg-black/40 p-3 rounded-xl border border-white/5 flex justify-between">
+                            <span class="text-gray-400">Cintura</span>
+                            <span class="font-mono font-bold text-emerald-400">79.0 cm</span>
+                        </div>
+                        <div class="bg-black/40 p-3 rounded-xl border border-white/5 flex justify-between">
+                            <span class="text-gray-400">Muslo Medio</span>
+                            <span class="font-mono font-bold text-white">61.5 cm</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PESTAÑA 4: CLAN / COMUNIDAD Y DESAFÍOS -->
+            <section id="appTab-comunidad" class="hidden p-4 space-y-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-neon">Comunidad & Gamificación</span>
+                        <h1 class="text-lg font-black uppercase text-white">Clan TitanFit</h1>
+                    </div>
+                    <button onclick="joinChallenge()" id="joinChallengeBtn" class="px-3 py-1.5 rounded-xl bg-neon text-black font-black text-[10px] uppercase">
+                        + Sumarme al Reto
+                    </button>
+                </div>
+
+                <!-- Desafío Mensual Activo -->
+                <div class="cyber-card-neon rounded-3xl p-4 space-y-2.5">
+                    <div class="flex justify-between items-center">
+                        <span class="px-2 py-0.5 rounded bg-black/60 text-neon font-bold text-[10px] uppercase">Reto de Noviembre</span>
+                        <span class="text-[10px] text-gray-300 font-mono">Quedan 12 días</span>
+                    </div>
+                    <h3 class="text-base font-black text-white uppercase">Club de las 100 Toneladas</h3>
+                    <p class="text-xs text-gray-300">Acumula 100,000 kg de volumen total en el mes registrando tus series en la app.</p>
+                    <div class="w-full h-2 bg-black/60 rounded-full overflow-hidden">
+                        <div class="bg-neon h-full w-[74%] rounded-full"></div>
+                    </div>
+                    <div class="flex justify-between text-[10px] font-mono text-gray-300">
+                        <span>Tu progreso: <strong class="text-neon">74,200 kg</strong></span>
+                        <span>Meta: 100,000 kg</span>
+                    </div>
+                </div>
+
+                <!-- Tabla de Posiciones Genérica -->
+                <div class="cyber-card rounded-3xl p-4 space-y-2.5 text-xs">
+                    <h4 class="text-[10px] font-bold uppercase text-gray-400 mb-1">Ranking Mensual de Constancia</h4>
+                    
+                    <div class="flex items-center justify-between bg-amber-500/10 p-3 rounded-xl border border-amber-400/30">
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-6 h-6 rounded-lg bg-amber-400 text-black font-black flex items-center justify-center text-[11px]">1</span>
+                            <div>
+                                <span class="font-bold text-white block">Atleta Demo #01</span>
+                                <span class="text-[10px] text-amber-300">18 sesiones este mes</span>
+                            </div>
+                        </div>
+                        <span class="font-mono font-black text-white">96,400 kg</span>
+                    </div>
+
+                    <div class="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/10">
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-6 h-6 rounded-lg bg-zinc-700 text-white font-black flex items-center justify-center text-[11px]">2</span>
+                            <div>
+                                <span class="font-bold text-white block">Atleta Demo #02</span>
+                                <span class="text-[10px] text-gray-400">16 sesiones este mes</span>
+                            </div>
+                        </div>
+                        <span class="font-mono font-black text-gray-200">82,150 kg</span>
+                    </div>
+
+                    <div class="flex items-center justify-between bg-neon/15 p-3 rounded-xl border border-neon">
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-6 h-6 rounded-lg bg-neon text-black font-black flex items-center justify-center text-[11px]">3</span>
+                            <div>
+                                <span class="font-bold text-white block">Alumno Demo (Tú)</span>
+                                <span class="text-[10px] text-neon">14 sesiones este mes</span>
+                            </div>
+                        </div>
+                        <span class="font-mono font-black text-neon">74,200 kg</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PESTAÑA 5: CUENTA, PARÁMETROS DEL ALUMNO & CREDENCIAL -->
+            <section id="appTab-cuenta" class="hidden p-4 space-y-4">
+                <!-- Tarjeta Metálica Titan Black ID (Datos 100% Genéricos) -->
+                <div class="titan-black-card rounded-3xl p-5 shadow-2xl relative overflow-hidden">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <span class="text-[10px] font-black uppercase tracking-widest text-neon">CREDENCIAL DIGITAL DE ACCESO</span>
+                            <h2 id="cardStudentName" class="text-xl font-black uppercase mt-1 text-white">ALUMNO DEMO</h2>
+                            <p id="cardStudentId" class="text-xs text-gray-400 font-mono mt-0.5">MATRÍCULA #TF-000100</p>
+                        </div>
+                        <button onclick="openQrModal()" class="p-2.5 rounded-xl bg-black/50 border border-neon/40 text-neon">
+                            <i class="ph-bold ph-qr-code text-2xl"></i>
+                        </button>
+                    </div>
+                    <div class="mt-5 pt-3 border-t border-white/10 flex justify-between items-center text-[11px]">
+                        <span class="text-gray-300">Objetivo Asignado: <strong id="cardStudentGoal" class="text-white">Hipertrofia & Fuerza</strong></span>
+                        <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-bold">CUOTA AL DÍA</span>
+                    </div>
+                </div>
+
+                <!-- Aviso de Sincronización con la App del Profesor -->
+                <div class="cyber-card rounded-2xl p-4 border border-neon/25">
+                    <div class="flex items-center gap-2 text-neon font-bold text-xs mb-1">
+                        <i class="ph-fill ph-check-seal text-base"></i>
+                        <span>Perfil gestionado por tu Personal Trainer</span>
+                    </div>
+                    <p class="text-xs text-gray-400 leading-relaxed">
+                        Tu rutina A/B/C/D, cargas objetivo, mediciones antropométricas y estado de membresía se actualizan automáticamente desde el panel del entrenador.
+                    </p>
+                </div>
+
+                <!-- Estado de Membresía y Pagos Genéricos -->
+                <div class="cyber-card rounded-2xl p-4 space-y-3">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-xs font-bold uppercase text-gray-400">Estado de Suscripción</h3>
+                        <span id="paymentBadge" class="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 text-[10px] font-bold">Pagado ✓</span>
+                    </div>
+                    <div class="bg-black/40 p-3.5 rounded-xl border border-white/5 space-y-2 text-xs">
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Plan Contratado:</span>
+                            <span class="font-bold text-white">Entrenamiento Personalizado + App</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Medio de Pago Registrado:</span>
+                            <span class="font-mono text-gray-300">Tarjeta Demo •••• 0000</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Próximo Vencimiento:</span>
+                            <span class="font-mono text-neon">Día 10 del próximo mes</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- Dock Inferior Flotante de 5 Pestañas -->
+    <nav class="fixed bottom-0 left-0 w-full bg-zinc-950/95 backdrop-blur-md border-t border-white/10 px-4 py-2 z-40">
+        <div class="max-w-lg mx-auto grid grid-cols-5 items-center">
+            <button onclick="switchAppTab('inicio')" id="navBtn-inicio" class="flex flex-col items-center py-1 text-neon">
+                <i class="ph-fill ph-gauge text-xl"></i><span class="text-[9px] font-bold uppercase mt-0.5">HUD</span>
+            </button>
+            <button onclick="switchAppTab('salud')" id="navBtn-salud" class="flex flex-col items-center py-1 text-gray-500">
+                <i class="ph-bold ph-scan text-xl"></i><span class="text-[9px] font-bold uppercase mt-0.5">BioScan</span>
+            </button>
+            <button onclick="switchAppTab('rutina')" id="navBtn-rutina" class="flex flex-col items-center -mt-5">
+                <div class="w-12 h-12 rounded-2xl neon-button flex items-center justify-center shadow-lg border-2 border-black">
+                    <i class="ph-fill ph-barbell text-2xl text-black"></i>
+                </div>
+                <span class="text-[9px] font-black uppercase text-neon mt-0.5">Splits</span>
+            </button>
+            <button onclick="switchAppTab('comunidad')" id="navBtn-comunidad" class="flex flex-col items-center py-1 text-gray-500">
+                <i class="ph-bold ph-trophy text-xl"></i><span class="text-[9px] font-bold uppercase mt-0.5">Clan</span>
+            </button>
+            <button onclick="switchAppTab('cuenta')" id="navBtn-cuenta" class="flex flex-col items-center py-1 text-gray-500">
+                <i class="ph-bold ph-identification-card text-xl"></i><span class="text-[9px] font-bold uppercase mt-0.5">Titan ID</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Modal QR de Acceso -->
+    <div id="qrAccessModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="cyber-card rounded-3xl p-6 max-w-xs w-full text-center space-y-4 border border-neon/40">
+            <div class="flex justify-between items-center">
+                <span class="text-xs text-neon font-black uppercase tracking-wider">PASE QR TITANFIT</span>
+                <button onclick="closeQrModal()" class="text-gray-400 hover:text-white"><i class="ph-bold ph-x text-lg"></i></button>
+            </div>
+            <div class="w-44 h-44 mx-auto bg-white p-3 rounded-2xl flex items-center justify-center shadow-inner">
+                <i class="ph-fill ph-qr-code text-8xl text-black"></i>
+            </div>
+            <div>
+                <p class="text-xs font-bold text-white uppercase">ALUMNO DEMO • #TF-000100</p>
+                <p class="text-[11px] text-gray-400 mt-1">Acerca el código al lector de ingreso.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notificación Toast -->
+    <div id="appToast" class="hidden fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-zinc-900 border border-neon text-white px-4 py-2.5 rounded-xl text-xs font-semibold shadow-2xl"></div>
+
+    <script>
+        // ============================================================================
+        // PERFIL GENÉRICO DEL ALUMNO (Preparado para ser modificado por la App del Profesor)
+        // ============================================================================
+        const STUDENT_PROFILE = {
+            id: "TF-000100",
+            name: "Alumno Demo",
+            initials: "AD",
+            level: "NV. 01",
+            plan: "Plan Personalizado",
+            goal: "Hipertrofia & Fuerza",
+            coachDirective: "Priorizar técnica y control excéntrico de 3 segundos en Prensa y Sentadilla Hack. Mantener hidratación alta.",
+            waterLiters: 2.0,
+            waterTarget: 3.0,
+            creatineTaken: false,
+            scans: {
+                current: { label: "Medición Actual • Control Mensual", weight: "78.4 kg", delta: "+2.4 kg Músculo", muscle: "38.2 kg", musclePct: "84%", fat: "13.8 %", fatPct: "32%", water: "62.5 %", waterPct: "78%" },
+                initial: { label: "Medición Día 1 • Ingreso", weight: "77.0 kg", delta: "Línea Base", muscle: "35.8 kg", musclePct: "68%", fat: "17.5 %", fatPct: "52%", water: "58.0 %", waterPct: "65%" }
+            }
+        };
+
+        // Base de datos completa de los 4 Splits (6 ejercicios por rutina)
+        const ROUTINES_DB = {
+            'A': {
+                title: 'Lower Torque (Cuádriceps & Glúteo)',
+                exercises: [
+                    { id: 'a1', name: 'Leg Press 45° (Prensa Inclinada)', rest: 60, sets: [{kg: 120, reps: 12, done: false}, {kg: 140, reps: 12, done: false}, {kg: 150, reps: 10, done: false}] },
+                    { id: 'a2', name: 'Hip Thrust (Elevación de Cadera)', rest: 60, sets: [{kg: 80, reps: 12, done: false}, {kg: 90, reps: 12, done: false}, {kg: 100, reps: 10, done: false}] },
+                    { id: 'a3', name: 'Sillón de Cuádriceps (Leg Extension)', rest: 45, sets: [{kg: 55, reps: 15, done: false}, {kg: 60, reps: 12, done: false}, {kg: 65, reps: 12, done: false}] },
+                    { id: 'a4', name: 'Estocada Búlgara con Mancuernas', rest: 60, sets: [{kg: 20, reps: 12, done: false}, {kg: 24, reps: 10, done: false}, {kg: 24, reps: 10, done: false}] },
+                    { id: 'a5', name: 'Gemelos Sentado en Máquina', rest: 45, sets: [{kg: 45, reps: 15, done: false}, {kg: 50, reps: 15, done: false}, {kg: 50, reps: 15, done: false}] },
+                    { id: 'a6', name: 'Sentadilla en Multipower (Smith)', rest: 60, sets: [{kg: 70, reps: 12, done: false}, {kg: 80, reps: 10, done: false}, {kg: 85, reps: 10, done: false}] }
+                ]
+            },
+            'B': {
+                title: 'Upper Hypertrophy (Pecho, Hombro & Bíceps)',
+                exercises: [
+                    { id: 'b1', name: 'Press de Banca Plano con Barra', rest: 60, sets: [{kg: 60, reps: 12, done: false}, {kg: 70, reps: 10, done: false}, {kg: 75, reps: 8, done: false}] },
+                    { id: 'b2', name: 'Press Inclinado con Mancuernas', rest: 60, sets: [{kg: 24, reps: 12, done: false}, {kg: 28, reps: 10, done: false}, {kg: 28, reps: 10, done: false}] },
+                    { id: 'b3', name: 'Pectoral Fly (Aperturas en Máquina)', rest: 45, sets: [{kg: 50, reps: 15, done: false}, {kg: 55, reps: 12, done: false}, {kg: 55, reps: 12, done: false}] },
+                    { id: 'b4', name: 'Press Militar con Mancuernas', rest: 60, sets: [{kg: 20, reps: 12, done: false}, {kg: 22, reps: 10, done: false}, {kg: 22, reps: 10, done: false}] },
+                    { id: 'b5', name: 'Jalón al Pecho Agarre Supino', rest: 60, sets: [{kg: 55, reps: 12, done: false}, {kg: 60, reps: 12, done: false}, {kg: 65, reps: 10, done: false}] },
+                    { id: 'b6', name: 'Curl de Bíceps en Banco Scott', rest: 45, sets: [{kg: 25, reps: 12, done: false}, {kg: 30, reps: 10, done: false}, {kg: 30, reps: 10, done: false}] }
+                ]
+            },
+            'C': {
+                title: 'Posterior Chain (Isquios, Aductores & Hack)',
+                exercises: [
+                    { id: 'c1', name: 'Sentadilla Hack Inclinada', rest: 60, sets: [{kg: 90, reps: 12, done: false}, {kg: 100, reps: 10, done: false}, {kg: 110, reps: 10, done: false}] },
+                    { id: 'c2', name: 'Peso Muerto Rumano con Barra', rest: 60, sets: [{kg: 80, reps: 12, done: false}, {kg: 90, reps: 10, done: false}, {kg: 95, reps: 10, done: false}] },
+                    { id: 'c3', name: 'Camilla Femorales (Leg Curl)', rest: 45, sets: [{kg: 45, reps: 15, done: false}, {kg: 50, reps: 12, done: false}, {kg: 55, reps: 10, done: false}] },
+                    { id: 'c4', name: 'Abductor de Cadera en Máquina', rest: 45, sets: [{kg: 50, reps: 15, done: false}, {kg: 55, reps: 15, done: false}, {kg: 60, reps: 12, done: false}] },
+                    { id: 'c5', name: 'Aductor de Cadera en Máquina', rest: 45, sets: [{kg: 50, reps: 15, done: false}, {kg: 55, reps: 15, done: false}, {kg: 60, reps: 12, done: false}] },
+                    { id: 'c6', name: 'Elevación de Gemelos de Pie', rest: 45, sets: [{kg: 60, reps: 15, done: false}, {kg: 65, reps: 15, done: false}, {kg: 70, reps: 12, done: false}] }
+                ]
+            },
+            'D': {
+                title: 'Back Density & Triceps Lockout',
+                exercises: [
+                    { id: 'd1', name: 'Tirón Frontal en Polea Alta', rest: 60, sets: [{kg: 60, reps: 12, done: false}, {kg: 65, reps: 10, done: false}, {kg: 70, reps: 10, done: false}] },
+                    { id: 'd2', name: 'Remo Sentado en Máquina Hammer', rest: 60, sets: [{kg: 70, reps: 12, done: false}, {kg: 75, reps: 10, done: false}, {kg: 80, reps: 10, done: false}] },
+                    { id: 'd3', name: 'Remo Bajo en Polea Unilateral', rest: 45, sets: [{kg: 25, reps: 12, done: false}, {kg: 30, reps: 12, done: false}, {kg: 30, reps: 10, done: false}] },
+                    { id: 'd4', name: 'Pull-Over en Polea Alta con Barra', rest: 45, sets: [{kg: 35, reps: 15, done: false}, {kg: 40, reps: 12, done: false}, {kg: 40, reps: 12, done: false}] },
+                    { id: 'd5', name: 'Fondos en Paralelas / Máquina Tríceps', rest: 60, sets: [{kg: 65, reps: 12, done: false}, {kg: 70, reps: 10, done: false}, {kg: 75, reps: 10, done: false}] },
+                    { id: 'd6', name: 'Extensión de Tríceps en Polea Alta', rest: 45, sets: [{kg: 25, reps: 15, done: false}, {kg: 30, reps: 12, done: false}, {kg: 30, reps: 12, done: false}] }
+                ]
+            }
+        };
+
+        let activeSplitKey = 'A';
+        let workoutTimerInterval = null;
+        let workoutSeconds = 0;
+        let restTimerInterval = null;
+        let restSecondsRemaining = 0;
+
+        // Navegación entre las 5 pestañas inferiores
+        window.switchAppTab = function(tab) {
+            ['inicio', 'rutina', 'salud', 'comunidad', 'cuenta'].forEach(t => {
+                document.getElementById(`appTab-${t}`).classList.toggle('hidden', t !== tab);
+                const btn = document.getElementById(`navBtn-${t}`);
+                if(btn && t !== 'rutina') {
+                    btn.classList.toggle('text-neon', t === tab);
+                    btn.classList.toggle('text-gray-500', t !== tab);
+                }
+            });
+            if(tab === 'rutina') closeRoutineDetail();
+            document.getElementById('appScrollContainer').scrollTo({top: 0, behavior: 'smooth'});
+        };
+
+        // Abrir Logger Interactivo de una Rutina
+        window.openRoutineDetail = function(key) {
+            activeSplitKey = key;
+            switchAppTab('rutina');
+            const r = ROUTINES_DB[key];
+            document.getElementById('routineListView').classList.add('hidden');
+            document.getElementById('routineDetailView').classList.remove('hidden');
+            document.getElementById('activeRoutineTitle').textContent = `SPLIT ${key} • EN CURSO`;
+            
+            startWorkoutChronometer();
+            renderExercisesLogger();
+            recalculateSessionVolume();
+        };
+
+        function renderExercisesLogger() {
+            const r = ROUTINES_DB[activeSplitKey];
+            const container = document.getElementById('exercisesContainer');
+            container.innerHTML = '';
+
+            r.exercises.forEach((ex, exIndex) => {
+                let setsRows = '';
+                ex.sets.forEach((s, setIdx) => {
+                    const rowBg = s.done ? 'bg-neon/15 border-neon/40' : 'bg-black/40 border-white/5';
+                    const btnStyle = s.done ? 'bg-neon text-black font-black' : 'bg-white/10 text-gray-300 hover:bg-white/20';
+                    setsRows += `
+                        <div class="grid grid-cols-12 gap-2 items-center p-2 rounded-xl border ${rowBg} text-xs transition-all">
+                            <div class="col-span-2 font-mono font-bold text-gray-400">#${setIdx + 1}</div>
+                            <div class="col-span-4">
+                                <input type="number" value="${s.kg}" onchange="updateSetData(${exIndex}, ${setIdx}, 'kg', this.value)" class="w-full bg-zinc-900 border border-white/10 rounded-lg px-2 py-1 text-center font-mono font-bold text-white focus:border-neon focus:outline-none">
+                            </div>
+                            <div class="col-span-4">
+                                <input type="number" value="${s.reps}" onchange="updateSetData(${exIndex}, ${setIdx}, 'reps', this.value)" class="w-full bg-zinc-900 border border-white/10 rounded-lg px-2 py-1 text-center font-mono font-bold text-white focus:border-neon focus:outline-none">
+                            </div>
+                            <div class="col-span-2 flex justify-end">
+                                <button onclick="toggleSetComplete(${exIndex}, ${setIdx}, ${ex.rest})" class="w-8 h-7 rounded-lg flex items-center justify-center ${btnStyle} transition-all">
+                                    <i class="ph-bold ph-check"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                container.innerHTML += `
+                    <div class="cyber-card rounded-2xl p-4 space-y-2.5">
+                        <div class="flex justify-between items-center">
+                            <h4 class="font-extrabold text-sm text-white">${exIndex + 1}. ${ex.name}</h4>
+                            <span class="text-[10px] font-mono text-neon bg-neon/10 px-2 py-0.5 rounded border border-neon/30"><i class="ph-bold ph-timer mr-1"></i>${ex.rest}s</span>
+                        </div>
+                        <div class="grid grid-cols-12 gap-2 text-[10px] font-bold uppercase text-gray-500 px-2">
+                            <div class="col-span-2">Serie</div>
+                            <div class="col-span-4 text-center">Carga (KG)</div>
+                            <div class="col-span-4 text-center">Reps</div>
+                            <div class="col-span-2 text-right">OK</div>
+                        </div>
+                        <div class="space-y-1.5">${setsRows}</div>
+                    </div>
+                `;
+            });
+        }
+
+        window.updateSetData = function(exIdx, setIdx, field, val) {
+            ROUTINES_DB[activeSplitKey].exercises[exIdx].sets[setIdx][field] = Number(val) || 0;
+            recalculateSessionVolume();
+        };
+
+        window.toggleSetComplete = function(exIdx, setIdx, restSec) {
+            const setObj = ROUTINES_DB[activeSplitKey].exercises[exIdx].sets[setIdx];
+            setObj.done = !setObj.done;
+            renderExercisesLogger();
+            recalculateSessionVolume();
+            if (setObj.done) {
+                startFloatingRest(restSec);
+            }
+        };
+
+        function recalculateSessionVolume() {
+            let total = 0;
+            ROUTINES_DB[activeSplitKey].exercises.forEach(ex => {
+                ex.sets.forEach(s => {
+                    if (s.done) total += (s.kg * s.reps);
+                });
+            });
+            document.getElementById('liveSessionVolume').textContent = `${total.toLocaleString()} kg`;
+        }
+
+        function startWorkoutChronometer() {
+            if (workoutTimerInterval) clearInterval(workoutTimerInterval);
+            workoutTimerInterval = setInterval(() => {
+                workoutSeconds++;
+                const hrs = String(Math.floor(workoutSeconds / 3600)).padStart(2, '0');
+                const mins = String(Math.floor((workoutSeconds % 3600) / 60)).padStart(2, '0');
+                const secs = String(workoutSeconds % 60).padStart(2, '0');
+                document.getElementById('workoutElapsedTimer').textContent = `${hrs}:${mins}:${secs}`;
+            }, 1000);
+        }
+
+        function startFloatingRest(seconds) {
+            if (restTimerInterval) clearInterval(restTimerInterval);
+            restSecondsRemaining = seconds;
+            const bar = document.getElementById('floatingRestBar');
+            bar.classList.remove('hidden');
+            updateRestDisplay();
+            restTimerInterval = setInterval(() => {
+                restSecondsRemaining--;
+                if (restSecondsRemaining <= 0) {
+                    stopFloatingRest();
+                    showAppToast('¡Tiempo de descanso cumplido! A la siguiente serie.');
+                } else {
+                    updateRestDisplay();
+                }
+            }, 1000);
+        }
+
+        function updateRestDisplay() {
+            const m = String(Math.floor(restSecondsRemaining / 60)).padStart(2, '0');
+            const s = String(restSecondsRemaining % 60).padStart(2, '0');
+            document.getElementById('floatingRestCountdown').textContent = `${m}:${s}`;
+        }
+
+        window.addRestSeconds = function(sec) {
+            restSecondsRemaining += sec;
+            updateRestDisplay();
+        };
+
+        window.stopFloatingRest = function() {
+            if (restTimerInterval) clearInterval(restTimerInterval);
+            document.getElementById('floatingRestBar').classList.add('hidden');
+        };
+
+        window.closeRoutineDetail = function() {
+            document.getElementById('routineDetailView').classList.add('hidden');
+            document.getElementById('routineListView').classList.remove('hidden');
+        };
+
+        // Acciones del HUD (Creatina e Hidratación)
+        window.logCreatineDose = function() {
+            STUDENT_PROFILE.creatineTaken = true;
+            document.getElementById('creatineStatusText').innerHTML = 'Creatina 5g: <span class="text-neon">Completado ✓</span>';
+            document.getElementById('creatineCheckBtn').textContent = 'Listo ✓';
+            showAppToast('¡Dosis de 5g de Creatina registrada!');
+        };
+
+        window.addWaterGlass = function() {
+            STUDENT_PROFILE.waterLiters = Math.min(4.5, +(STUDENT_PROFILE.waterLiters + 0.25).toFixed(2));
+            document.getElementById('waterStatusText').innerHTML = `Agua: <strong class="text-white">${STUDENT_PROFILE.waterLiters} / ${STUDENT_PROFILE.waterTarget} L</strong>`;
+            showAppToast('+250ml de hidratación registrados.');
+        };
+
+        // Comparador de Bioimpedancia (Actual vs Día 1)
+        window.toggleBioScanMode = function(mode) {
+            const data = STUDENT_PROFILE.scans[mode];
+            document.getElementById('scanDateLabel').textContent = data.label;
+            document.getElementById('scanWeightValue').textContent = data.weight;
+            document.getElementById('scanDeltaBadge').textContent = data.delta;
+            document.getElementById('scanMuscleValue').textContent = data.muscle;
+            document.getElementById('scanMuscleBar').style.width = data.musclePct;
+            document.getElementById('scanFatValue').textContent = data.fat;
+            document.getElementById('scanFatBar').style.width = data.fatPct;
+            document.getElementById('scanWaterValue').textContent = data.water;
+            document.getElementById('scanWaterBar').style.width = data.waterPct;
+
+            const btnCur = document.getElementById('scanBtnCurrent');
+            const btnIni = document.getElementById('scanBtnInitial');
+            if (mode === 'current') {
+                btnCur.className = 'px-2.5 py-1 rounded-lg bg-neon text-black transition-all';
+                btnIni.className = 'px-2.5 py-1 rounded-lg text-gray-400 hover:text-white transition-all';
+            } else {
+                btnIni.className = 'px-2.5 py-1 rounded-lg bg-neon text-black transition-all';
+                btnCur.className = 'px-2.5 py-1 rounded-lg text-gray-400 hover:text-white transition-all';
+            }
+        };
+
+        window.joinChallenge = function() {
+            const btn = document.getElementById('joinChallengeBtn');
+            btn.textContent = 'Inscripto ✓';
+            showAppToast('¡Ya estás participando en el desafío mensual del Clan!');
+        };
+
+        window.showAppToast = function(msg) {
+            const t = document.getElementById('appToast');
+            t.textContent = msg;
+            t.classList.remove('hidden');
+            setTimeout(() => t.classList.add('hidden'), 2600);
+        };
+
+        window.openQrModal = () => document.getElementById('qrAccessModal').classList.remove('hidden');
+        window.closeQrModal = () => document.getElementById('qrAccessModal').classList.add('hidden');
+        window.finishCurrentWorkout = () => {
+            stopFloatingRest();
+            switchAppTab('inicio');
+            showAppToast('¡Sesión guardada y sincronizada con tu entrenador!');
+        };
+    </script>
+</body>
+</html>
